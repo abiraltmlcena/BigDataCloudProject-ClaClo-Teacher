@@ -1,0 +1,5 @@
+run environment 
+    source env/bin/activate 
+
+run fastapi app
+    uvicorn main:app --reload 
