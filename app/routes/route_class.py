@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Body, HTTPException, Path, Depends
 from ..schema.class_schema import class_list
 from ..config.database import db
-from ..auth.jwt_handler import signJWT
 from ..auth.auth_bearer import jwtBearer
 from bson import ObjectId
 from typing import List
@@ -17,22 +16,27 @@ async def get_class():
     classes = class_list(class_collection.find())
     return classes
 
-# Get all students by class
-@classe.get("/class/{class_id}", dependencies=[Depends(jwtBearer())], tags=["class"])
-async def get_students_by_class(class_id: str):
-    # Retrieve students for the given class ID
-    students = []
-    class_id = class_doc["class_id"]
-    for student in db.class_collection.find({"class_id": class_id}):
-        name = student["name"]
-        email = student["email"]
 
-        students.append({
-            "student_id": str(student["_id"]),  # Use answer_id directly
-            "name": name,
-            "email": email
-        })
-        return students
+# Get all students by class ID
+@classe.get("/classes/{class_id}/students", dependencies=[Depends(jwtBearer())], tags=["class"])
+async def get_students_by_class_id(class_id: str):
+    # Check if class exists
+    class_doc = class_collection.find_one({"_id": ObjectId(class_id)})
+    if not class_doc:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    # Retrieve students for the given class ID
+    students = class_doc.get("student", [])
+    student_list = []
+    for student in students:
+        student_details = {
+            "student_id": str(student["_id"]),
+            "name": student["name"],
+            "email": student["email"]
+        }
+        student_list.append(student_details)
+    
+    return student_list
 
 
 # Create a new class with student IDs

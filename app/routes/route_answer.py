@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Body, HTTPException, Path, Depends, Response, UploadFile
 from ..config.database import db, fs
-from ..auth.jwt_handler import signJWT
 from ..auth.auth_bearer import jwtBearer
 from bson import ObjectId
 from gridfs import GridFS
@@ -40,64 +39,6 @@ async def get_answers_group_by_classID_and_exerciseID() -> List[Dict[str, Any]]:
                 for (class_id, exercise_id), answers in answers_by_class_and_exercise.items()]
 
     return response
-
-
-@answer.get("/answerss/",dependencies=[Depends(jwtBearer())], tags=["answers"])
-async def get_answers_group_by_classID() -> List[Dict[str, Any]]:
-    answers_by_class_and_exercise = {}
-
-    # Retrieve answers for the given class ID and exercise ID
-    answers = db.excercise_and_assignment.find()
-
-    # Group answers by class ID and exercise ID
-    for ans in answers:
-        exercise_id = ans["excercise_Id"]
-        ans_info = {
-            "answer_id": str(ans["_id"]),
-            "student_id": ans["student_Id"],
-            "topic_name": ans["topic_name"],
-            "file_id": ans["file_id"],
-            "upload_date": ans["upload_date"]
-        }
-        if (exercise_id) not in answers_by_class_and_exercise:
-            answers_by_class_and_exercise[(exercise_id)] = [ans_info]
-        else:
-            answers_by_class_and_exercise[(exercise_id)].append(ans_info)
-
-    # Convert dictionary to list of dictionaries for response
-    response = [{"exercise_id": exercise_id, "answers": answers} 
-                for (exercise_id), answers in answers_by_class_and_exercise.items()]
-
-    return response
-
-
-
-@answer.get("/answers/exercise/{exercise_id}", dependencies=[Depends(jwtBearer())], tags=["answers"])
-async def get_answers_by_exercise(exercise_id: str = Path(..., title="Exercise ID")):    
-    # Check if the exercise exists
-    exercise = db.exercise_collection.find_one({"_id": ObjectId(exercise_id)})
-    if not exercise:
-        raise HTTPException(status_code=404, detail="Exercise not found")
-
-    # Retrieve answers for the given exercise ID
-    answers = []
-    for answer in db.excercise_and_assignment.find({"excercise_Id": exercise_id}):
-        student_id = answer["student_Id"]
-        topic_name = answer["topic_name"]
-        class_id = answer["class_id"]
-        file_id = answer["file_id"]
-        upload_date = answer["upload_date"]
-        
-        answers.append({
-            "answer_id": str(answer["_id"]),  # Use answer_id directly
-            "student_id": student_id,
-            "topic_name": topic_name,
-            "class_id": class_id,
-            "file_id": file_id,
-            "upload_date": upload_date
-        })
-        
-    return answers
 
 
 
@@ -140,31 +81,25 @@ async def download_answer(student_id: str = Path(..., title="Student ID"),
         exercise = db.exercise_collection.find_one({"_id": ObjectId(exercise_id)})
         if not exercise:
             raise HTTPException(status_code=404, detail="Exercise not found")
-        
         # Check if the student exists
         student = db.student_collection.find_one({"_id": ObjectId(student_id)})
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
-        
         # Retrieve the answer for the given exercise and student
         answer = db.excercise_and_assignment.find_one({"excercise_Id": exercise_id, "student_Id": student_id})
         if not answer:
             raise HTTPException(status_code=404, detail="Answer not found for this student and exercise")
-
         # Retrieve file from GridFS using the file ID stored in the study material
         file_info = fs.get(ObjectId(answer["file_id"]))
         if file_info is None:
             raise HTTPException(status_code=404, detail="File not found")
-
         # Determine media type based on file extension
         filename = file_info.filename
         media_type, _ = mimetypes.guess_type(filename)
         if media_type is None:
                 media_type = "application/octet-stream"
-
         # Read file content into memory
         file_content = file_info.read()
-
         # Return file content as response
         return Response(content=file_content, media_type=media_type, headers={"Content-Disposition": f"attachment; filename={filename}"})
     except HTTPException:

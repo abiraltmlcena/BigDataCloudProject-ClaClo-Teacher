@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Body, HTTPException, Path, UploadFile, File, Response, Depends
 from ..config.database import db, fs
-from ..auth.jwt_handler import signJWT
 from ..auth.auth_bearer import jwtBearer
 from bson import ObjectId
 from datetime import datetime
@@ -34,6 +33,27 @@ async def get_exercises():
             "submission_date": submission_date
         })
     return exercises"""
+
+
+@exercise.get("/exercises/{class_id}", dependencies=[Depends(jwtBearer())], tags=["exercise"])
+async def get_exercises_by_class(class_id: str) -> List[Dict[str, Any]]:
+    # Retrieve exercises for the specified class ID
+    exercises = exercise_collection.find({"class_id": class_id})
+
+    # Prepare list of exercises for the response
+    exercises_list = []
+    for exercise in exercises:
+
+        exercise_info = {
+            "exercise_id": str(exercise["_id"]),
+            "topic": exercise["topic"],
+            "exercise_file_id": exercise["exercise_file_id"],
+            "upload_date": exercise["upload_date"],
+            "submission_date": exercise["submission_date"]
+        }
+        exercises_list.append(exercise_info)
+
+    return exercises_list
 
 
 
@@ -84,7 +104,6 @@ async def upload_exercise(topic: str, class_id: str, submission_date: datetime, 
         "upload_date": datetime.utcnow().isoformat(),
         "submission_date": submission_date.isoformat()
     }
-
     # Insert metadata into exercise collection
     inserted_id = exercise_collection.insert_one(exercise).inserted_id
 
