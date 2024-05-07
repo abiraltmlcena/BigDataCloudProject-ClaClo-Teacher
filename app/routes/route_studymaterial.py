@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Body, HTTPException, Path, UploadFile, File, Response, Depends
-from ..config.database import db, fs
-from ..auth.auth_bearer import jwtBearer
+from config.database import db, fs
+from auth.auth_bearer import jwtBearer
 from bson import ObjectId
 from datetime import datetime
 from gridfs import GridFS

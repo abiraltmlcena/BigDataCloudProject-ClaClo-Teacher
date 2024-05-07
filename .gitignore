@@ -1,2 +1,5 @@
+
 env/Scripts/uvicorn.exe
 env/Scripts/python.exe
+
+\env
