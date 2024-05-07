@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Body, HTTPException, Path, Depends
-from ..config.database import db
-from ..models.staffs import StaffLogin
-from ..auth.jwt_handler import signJWT
+from config.database import db
+from models.staffs import StaffLogin
+from auth.jwt_handler import signJWT
 from pydantic import EmailStr
 import bcrypt
 

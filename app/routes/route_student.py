@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Body, HTTPException, Path, Depends
-from ..config.database import db
-from ..auth.auth_bearer import jwtBearer
+from config.database import db
+from auth.auth_bearer import jwtBearer
 from bson import ObjectId
 from pydantic import EmailStr
 import bcrypt

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Body, HTTPException, Path, Depends
-from ..schema.class_schema import class_list
-from ..config.database import db
-from ..auth.auth_bearer import jwtBearer
+from schema.class_schema import class_list
+from config.database import db
+from auth.auth_bearer import jwtBearer
 from bson import ObjectId
 from typing import List
 
